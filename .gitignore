@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+*.log
+
+# local runtime state
+data/*.json
+!data/seen_items.json
