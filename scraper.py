@@ -34,6 +34,30 @@ SKIP_TITLE_WORDS = [
     "terms",
 ]
 
+SOURCE_HINTS: dict[str, list[str]] = {
+    "Basser": ["basser", "\u30d0\u30b9", "bass"],
+    "JB-NBC": ["jb", "nbc", "\u30d0\u30b9", "bass"],
+    "WBS": ["wbs", "\u30d0\u30b9", "bass"],
+    "LureNewsR": ["\u30d0\u30b9", "black bass", "bass"],
+    "MLF": ["bass", "largemouth", "smallmouth", "spotted"],
+}
+
+SOURCE_EXCLUDE_HINTS: dict[str, list[str]] = {
+    "LureNewsR": [
+        "\u30b7\u30fc\u30d0\u30b9",
+        "\u30a8\u30ae",
+        "\u30a4\u30ab",
+        "\u30e1\u30d0\u30eb",
+        "\u30a2\u30b8",
+        "\u30c1\u30cc",
+        "\u30bf\u30a4\u30e9\u30d0",
+        "\u30c8\u30e9\u30a6\u30c8",
+        "seabass",
+        "squid",
+        "trout",
+    ]
+}
+
 
 def discover_entries(source: SourceDefinition, limit: int) -> list[RawEntry]:
     if source.parser == "rss":
@@ -66,12 +90,16 @@ def _discover_from_rss(source: SourceDefinition, limit: int) -> list[RawEntry]:
             or entry.get("updated", "")
             or entry.get("created", "")
         )
+        summary = _extract_summary(entry)
+        if not _is_entry_relevant(source, title, canonical_url, summary):
+            continue
         items.append(
             RawEntry(
                 source=source.name,
                 url=canonical_url,
                 title=title,
                 published_at=published,
+                summary=summary,
             )
         )
         if len(items) >= limit:
@@ -106,6 +134,8 @@ def _discover_from_html(source: SourceDefinition, limit: int) -> list[RawEntry]:
         if url in seen_urls:
             continue
         seen_urls.add(url)
+        if not _is_entry_relevant(source, title, url, ""):
+            continue
 
         score = 0
         lowered_path = urlparse(url).path.lower()
@@ -123,6 +153,7 @@ def _discover_from_html(source: SourceDefinition, limit: int) -> list[RawEntry]:
                     url=url,
                     title=title,
                     published_at="",
+                    summary="",
                 ),
             )
         )
@@ -190,3 +221,32 @@ def _canonical_url(url: str) -> str:
     parsed = urlparse(url)
     clean_path = parsed.path.rstrip("/") or "/"
     return f"{parsed.scheme}://{parsed.netloc}{clean_path}"
+
+
+def _extract_summary(entry) -> str:
+    if entry.get("summary"):
+        return _clean_text(entry.get("summary", ""))
+    if entry.get("content"):
+        content = entry.get("content", [])
+        if content and isinstance(content, list):
+            return _clean_text(content[0].get("value", ""))
+    return ""
+
+
+def _clean_text(raw: str) -> str:
+    if not raw:
+        return ""
+    soup = BeautifulSoup(raw, "html.parser")
+    return " ".join(soup.get_text(" ", strip=True).split())
+
+
+def _is_entry_relevant(source: SourceDefinition, title: str, url: str, summary: str) -> bool:
+    merged = f"{title} {url} {summary}".lower()
+    include_hints = SOURCE_HINTS.get(source.name, [])
+    exclude_hints = SOURCE_EXCLUDE_HINTS.get(source.name, [])
+
+    if include_hints and not any(h.lower() in merged for h in include_hints):
+        return False
+    if exclude_hints and any(h.lower() in merged for h in exclude_hints):
+        return False
+    return True

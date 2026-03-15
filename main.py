@@ -10,7 +10,7 @@ import notion_client
 import telegram_sender
 from ai_writer import generate_social_copy
 from filters import evaluate_largemouth_only
-from models import FilterResult, ProcessedItem
+from models import Article, FilterResult, ProcessedItem
 from scraper import discover_entries, fetch_article
 from source_registry import SOURCES
 from storage import SeenStore
@@ -63,14 +63,22 @@ def main() -> None:
             try:
                 article = fetch_article(entry.url, fallback_title=entry.title)
             except Exception as exc:  # noqa: BLE001
-                logger.warning("Article fetch failed: %s (%s)", entry.url, exc)
-                continue
+                logger.warning("Article fetch failed, fallback to RSS summary: %s (%s)", entry.url, exc)
+                if not entry.summary.strip():
+                    continue
+                article = Article(
+                    url=entry.url,
+                    title=entry.title,
+                    text=entry.summary,
+                    published_at=entry.published_at,
+                )
 
             content_title = article.title or entry.title
             filter_result = evaluate_largemouth_only(
                 title=content_title,
                 text=article.text,
                 url=entry.url,
+                source=entry.source,
             )
 
             if not filter_result.passed:
@@ -127,7 +135,7 @@ def main() -> None:
 def _make_item_id(source: str, url: str) -> str:
     digest = hashlib.sha1(url.encode("utf-8")).hexdigest()[:12]
     source_key = source.lower().replace(" ", "-")
-    return f"{source_key}-{digest}"
+    return f"{config.FILTER_VERSION}-{source_key}-{digest}"
 
 
 def _clip(text: str, max_len: int) -> str:

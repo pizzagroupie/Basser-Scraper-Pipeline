@@ -7,3 +7,4 @@ __pycache__/
 # local runtime state
 data/*.json
 !data/seen_items.json
+downloads/

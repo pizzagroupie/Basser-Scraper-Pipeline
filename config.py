@@ -40,3 +40,4 @@ SEEN_ITEMS_FILE = os.environ.get("SEEN_ITEMS_FILE", "data/seen_items.json")
 
 # --- Filtering policy ---
 STRICT_LARGEMOUTH_ONLY = True
+FILTER_VERSION = os.environ.get("FILTER_VERSION") or "v2"

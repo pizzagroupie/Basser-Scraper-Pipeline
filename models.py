@@ -19,6 +19,7 @@ class RawEntry:
     url: str
     title: str
     published_at: str = ""
+    summary: str = ""
 
 
 @dataclass(slots=True)
