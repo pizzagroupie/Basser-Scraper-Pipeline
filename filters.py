@@ -56,7 +56,7 @@ EXCLUDED_TERMS = [
     "bass guitar",
 ]
 
-TRUSTED_BLACK_BASS_SOURCES = {"Basser", "JB-NBC", "WBS", "MLF"}
+TRUSTED_BLACK_BASS_SOURCES = {"Basser", "JB-NBC", "WBS", "MLF", "Bassmaster"}
 
 
 def _normalize(text: str) -> str:
@@ -103,21 +103,6 @@ def evaluate_largemouth_only(title: str, text: str, url: str = "", source: str =
             passed=True,
             reason="passed_species_plus_trusted_source",
             species_hits=species_hits,
-        )
-
-    if context_hits and freshwater_hits and has_source_hint:
-        return FilterResult(
-            passed=True,
-            reason="passed_context_plus_freshwater_trusted_source",
-            species_hits=context_hits,
-            freshwater_hits=freshwater_hits,
-        )
-
-    if context_hits and has_source_hint:
-        return FilterResult(
-            passed=True,
-            reason="passed_context_plus_trusted_source",
-            species_hits=context_hits,
         )
 
     if not species_hits and not context_hits:

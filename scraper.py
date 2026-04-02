@@ -38,8 +38,9 @@ SOURCE_HINTS: dict[str, list[str]] = {
     "Basser": ["basser", "\u30d0\u30b9", "bass"],
     "JB-NBC": ["jb", "nbc", "\u30d0\u30b9", "bass"],
     "WBS": ["wbs", "\u30d0\u30b9", "bass"],
-    "LureNewsR": ["\u30d0\u30b9", "black bass", "bass"],
+    "LureNewsR": ["\u30d0\u30b9", "\u30d6\u30e9\u30c3\u30af\u30d0\u30b9", "black bass"],
     "MLF": ["bass", "largemouth", "smallmouth", "spotted"],
+    "Bassmaster": ["bassmaster", "elite", "opens", "classic", "largemouth", "bass"],
 }
 
 SOURCE_EXCLUDE_HINTS: dict[str, list[str]] = {
@@ -56,6 +57,35 @@ SOURCE_EXCLUDE_HINTS: dict[str, list[str]] = {
         "squid",
         "trout",
     ]
+}
+
+GLOBAL_EXCLUDE_PATH_HINTS = [
+    "/tag/",
+    "/tags/",
+    "/category/",
+    "/author/",
+    "/privacy",
+    "/policy",
+    "/terms",
+    "/contact",
+    "/login",
+    "/register",
+]
+
+SOURCE_EXCLUDE_PATH_HINTS: dict[str, list[str]] = {
+    "Basser": [
+        "/limit1/",
+        "/new-article",
+        "/beginner",
+        "/suburb",
+        "/north",
+    ],
+    "WBS": [
+        "/tournaments/",
+        "/schedule/",
+        "/event/",
+        "/movie/",
+    ],
 }
 
 
@@ -129,6 +159,11 @@ def _discover_from_html(source: SourceDefinition, limit: int) -> list[RawEntry]:
             continue
         if urlparse(url).netloc != base_host:
             continue
+        lowered_path = urlparse(url).path.lower()
+        if _path_depth(lowered_path) <= 1:
+            continue
+        if _is_excluded_path(source, lowered_path):
+            continue
         if any(word in title.lower() for word in SKIP_TITLE_WORDS):
             continue
         if url in seen_urls:
@@ -138,8 +173,8 @@ def _discover_from_html(source: SourceDefinition, limit: int) -> list[RawEntry]:
             continue
 
         score = 0
-        lowered_path = urlparse(url).path.lower()
         score += sum(1 for hint in LINK_HINTS if hint in lowered_path)
+        score += min(_path_depth(lowered_path), 4)
         if re.search(r"/20\d{2}/", lowered_path):
             score += 2
         if len(title) > 24:
@@ -250,3 +285,14 @@ def _is_entry_relevant(source: SourceDefinition, title: str, url: str, summary: 
     if exclude_hints and any(h.lower() in merged for h in exclude_hints):
         return False
     return True
+
+
+def _path_depth(path: str) -> int:
+    return len([segment for segment in path.split("/") if segment.strip()])
+
+
+def _is_excluded_path(source: SourceDefinition, path: str) -> bool:
+    if any(hint in path for hint in GLOBAL_EXCLUDE_PATH_HINTS):
+        return True
+    source_hints = SOURCE_EXCLUDE_PATH_HINTS.get(source.name, [])
+    return any(hint in path for hint in source_hints)

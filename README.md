@@ -11,6 +11,7 @@ It scans selected JP/US bass sources, filters strictly for `largemouth bass + fr
 - WBS: `https://www.wbs1.jp/`
 - LureNewsR: `https://www.lurenewsr.com/feed/`
 - MLF: `https://majorleaguefishing.com/feed/`
+- Bassmaster: `https://www.bassmaster.com/news/feed/`
 
 ## Strict Filter Rules
 
@@ -25,7 +26,9 @@ The pipeline keeps an item only if:
 2. It contains freshwater context signal:
    - `freshwater`, `lake`, `reservoir`, `river`, `dam`, etc.
 
-3. It does **not** contain excluded species/context:
+3. For trusted black-bass tournament sources, `species signal + trusted source` can pass even if freshwater words are omitted in the title/body.
+
+4. It does **not** contain excluded species/context:
    - `smallmouth bass`, `spotted bass`, `striped bass`, `sea bass`, `seabass`, etc.
    - `bass guitar`
 

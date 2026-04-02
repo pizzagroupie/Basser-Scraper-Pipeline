@@ -40,4 +40,11 @@ SOURCES: list[SourceDefinition] = [
         parser="rss",
         language="en",
     ),
+    SourceDefinition(
+        name="Bassmaster",
+        base_url="https://www.bassmaster.com",
+        entry_url="https://www.bassmaster.com/news/feed/",
+        parser="rss",
+        language="en",
+    ),
 ]
